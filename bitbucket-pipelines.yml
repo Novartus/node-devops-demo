@@ -1,0 +1,47 @@
+pipelines:
+  custom: # Pipelines that can only be triggered manually
+    buildStatistics:
+      - variables:
+          - name: BITBUCKET_USERNAME
+          - name: BITBUCKET_APP_PASSWORD
+      - step:
+          name: Bitbucket Build Statistics
+          script:
+            - pipe: atlassian/bitbucket-build-statistics:0.2.1
+              variables:
+                BITBUCKET_USERNAME: $BITBUCKET_USERNAME
+                BITBUCKET_APP_PASSWORD: $BITBUCKET_APP_PASSWORD
+
+    verifyTestCases:
+      - step:
+          name: Manual Test Case
+          services:
+            - docker
+          script:
+            - echo 'Starting Test Cases'
+            - export DOCKER_COMPOSE_VERSION=1.29.2
+            - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+            - chmod +x /usr/local/bin/docker-compose
+            - docker-compose -v
+            - docker-compose run dev npm run test
+            - echo 'Tests looks good !'
+
+  pull-requests:
+    '**': #this runs as default for any branch not elsewhere defined
+      - step:
+          name: PR Merge Test Cases
+          services:
+            - docker
+          script:
+            - echo 'Starting PR Test Cases'
+            - export DOCKER_COMPOSE_VERSION=1.29.2
+            - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+            - chmod +x /usr/local/bin/docker-compose
+            - docker-compose -v
+            - docker-compose run dev npm run test
+            - echo 'PR Tests looks good !'
+
+definitions:
+  services:
+    docker:
+      memory: 1024 # Memory for docker-in-docker : 1GB
